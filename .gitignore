@@ -1,0 +1,9 @@
+.env
+*.json
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+token.pkl

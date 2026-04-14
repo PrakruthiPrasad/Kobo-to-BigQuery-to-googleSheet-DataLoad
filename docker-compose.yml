@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+
+  webhook:
+    build:
+      context: .
+      dockerfile: services/webhook/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file: .env
+    volumes:
+      - ./shared:/app/shared
+
+  sync:
+    build:
+      context: .
+      dockerfile: services/sync/Dockerfile
+    env_file: .env
+    volumes:
+      - ./shared:/app/shared
