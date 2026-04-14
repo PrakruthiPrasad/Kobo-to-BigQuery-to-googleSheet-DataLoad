@@ -1,6 +1,6 @@
 # Kobo → BigQuery → Google Sheets Pipeline
 
-Real-time data pipeline for KoboToolbox survey forms.
+Real-time data pipeline for KoboToolbox survey forms. A lightweight, serverless data pipeline for Non-Profit Organizations that automatically extracts survey data from KoboToolbox via the REST API and loads it into Google BigQuery for reporting and analysis. Built with Python, Google Cloud Functions, and Cloud Scheduler — with near-zero running costs using Google for Nonprofits credits.
 
 ## Quick start
 
