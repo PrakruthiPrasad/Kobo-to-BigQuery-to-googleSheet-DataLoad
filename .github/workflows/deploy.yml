@@ -1,0 +1,78 @@
+name: Test and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Run full test suite ─────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build test image and run pytest
+        run: |
+          docker compose -f docker-compose.test.yml up \
+            --abort-on-container-exit \
+            --exit-code-from test
+
+  # ── Deploy webhook service ──────────────────────────────────────────────────
+  deploy-webhook:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and push webhook image
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+          docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-webhook:latest \
+            -f services/webhook/Dockerfile .
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-webhook:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy kobo-webhook-receiver \
+            --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-webhook:latest \
+            --region=${{ secrets.GCP_REGION }} \
+            --min-instances=1 \
+            --platform=managed \
+            --no-allow-unauthenticated
+
+  # ── Deploy sync job ─────────────────────────────────────────────────────────
+  deploy-sync:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and push sync image
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+          docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-sync:latest \
+            -f services/sync/Dockerfile .
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-sync:latest
+
+      - name: Deploy to Cloud Run Jobs
+        run: |
+          gcloud run jobs update kobo-full-sync \
+            --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-sync:latest \
+            --region=${{ secrets.GCP_REGION }} \
+            || gcloud run jobs create kobo-full-sync \
+            --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-sync:latest \
+            --region=${{ secrets.GCP_REGION }}
