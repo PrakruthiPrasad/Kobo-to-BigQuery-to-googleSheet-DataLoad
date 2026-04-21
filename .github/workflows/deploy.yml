@@ -48,6 +48,23 @@ jobs:
           docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest
 
       - name: Deploy to Cloud Run
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BQ_TABLE: ${{ secrets.BQ_TABLE }}
+          FORM_UID: ${{ secrets.FORM_UID }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+          SHEET_TAB: ${{ secrets.SHEET_TAB }}
+          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
+          DELEGATED_EMAIL: ${{ secrets.DELEGATED_EMAIL }}
+          SA_KEY_SECRET: ${{ secrets.SA_KEY_SECRET }}
+          SYNC_MODE: ${{ secrets.SYNC_MODE }}
+          MAX_SHEET_ROWS: ${{ secrets.MAX_SHEET_ROWS }}
+          TEST_KEYWORDS: ${{ secrets.TEST_KEYWORDS }}
+          TEAM_EMAILS: ${{ secrets.TEAM_EMAILS }}
+          NEW_ENTRY_NOTIFY_EMAILS: ${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }}
+          ALERT_EMAILS: ${{ secrets.ALERT_EMAILS }}
         run: |
           gcloud run deploy kobo-webhook-receiver \
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
@@ -56,7 +73,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
-            --set-env-vars=BQ_PROJECT=${{ secrets.BQ_PROJECT }},BQ_DATASET=${{ secrets.BQ_DATASET }},BQ_TABLE=${{ secrets.BQ_TABLE }},FORM_UID=${{ secrets.FORM_UID }},SHEET_ID=${{ secrets.SHEET_ID }},SHEET_NAME=${{ secrets.SHEET_NAME }},SHEET_TAB=${{ secrets.SHEET_TAB }},SHARED_DRIVE_FOLDER_ID=${{ secrets.SHARED_DRIVE_FOLDER_ID }},DELEGATED_EMAIL=${{ secrets.DELEGATED_EMAIL }},SA_KEY_SECRET=${{ secrets.SA_KEY_SECRET }},SYNC_MODE=${{ secrets.SYNC_MODE }},MAX_SHEET_ROWS=${{ secrets.MAX_SHEET_ROWS }},TEST_KEYWORDS=${{ secrets.TEST_KEYWORDS }},TEAM_EMAILS=${{ secrets.TEAM_EMAILS }},NEW_ENTRY_NOTIFY_EMAILS=${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }},ALERT_EMAILS=${{ secrets.ALERT_EMAILS }} \
+            --set-env-vars="BQ_PROJECT=${BQ_PROJECT},BQ_DATASET=${BQ_DATASET},BQ_TABLE=${BQ_TABLE},FORM_UID=${FORM_UID},SHEET_ID=${SHEET_ID},SHEET_NAME=${SHEET_NAME},SHEET_TAB=${SHEET_TAB},SHARED_DRIVE_FOLDER_ID=${SHARED_DRIVE_FOLDER_ID},DELEGATED_EMAIL=${DELEGATED_EMAIL},SA_KEY_SECRET=${SA_KEY_SECRET},SYNC_MODE=${SYNC_MODE},MAX_SHEET_ROWS=${MAX_SHEET_ROWS},TEST_KEYWORDS=${TEST_KEYWORDS},TEAM_EMAILS=${TEAM_EMAILS},NEW_ENTRY_NOTIFY_EMAILS=${NEW_ENTRY_NOTIFY_EMAILS},ALERT_EMAILS=${ALERT_EMAILS}" \
             --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest,KOBO_WEBHOOK_SECRET=kobo-webhook-secret:latest
 
   # ── Deploy sync job ─────────────────────────────────────────────────────────
@@ -80,16 +97,33 @@ jobs:
           docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest
 
       - name: Deploy to Cloud Run Jobs
+        env:
+          BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
+          BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BQ_TABLE: ${{ secrets.BQ_TABLE }}
+          FORM_UID: ${{ secrets.FORM_UID }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+          SHEET_TAB: ${{ secrets.SHEET_TAB }}
+          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
+          DELEGATED_EMAIL: ${{ secrets.DELEGATED_EMAIL }}
+          SA_KEY_SECRET: ${{ secrets.SA_KEY_SECRET }}
+          SYNC_MODE: ${{ secrets.SYNC_MODE }}
+          MAX_SHEET_ROWS: ${{ secrets.MAX_SHEET_ROWS }}
+          TEST_KEYWORDS: ${{ secrets.TEST_KEYWORDS }}
+          TEAM_EMAILS: ${{ secrets.TEAM_EMAILS }}
+          NEW_ENTRY_NOTIFY_EMAILS: ${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }}
+          ALERT_EMAILS: ${{ secrets.ALERT_EMAILS }}
         run: |
           gcloud run jobs update kobo-full-sync \
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
             --region=${{ secrets.GCP_REGION }} \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
-            --set-env-vars=BQ_PROJECT=${{ secrets.BQ_PROJECT }},BQ_DATASET=${{ secrets.BQ_DATASET }},BQ_TABLE=${{ secrets.BQ_TABLE }},FORM_UID=${{ secrets.FORM_UID }},SHEET_ID=${{ secrets.SHEET_ID }},SHEET_NAME=${{ secrets.SHEET_NAME }},SHEET_TAB=${{ secrets.SHEET_TAB }},SHARED_DRIVE_FOLDER_ID=${{ secrets.SHARED_DRIVE_FOLDER_ID }},DELEGATED_EMAIL=${{ secrets.DELEGATED_EMAIL }},SA_KEY_SECRET=${{ secrets.SA_KEY_SECRET }},SYNC_MODE=${{ secrets.SYNC_MODE }},MAX_SHEET_ROWS=${{ secrets.MAX_SHEET_ROWS }},TEST_KEYWORDS=${{ secrets.TEST_KEYWORDS }},TEAM_EMAILS=${{ secrets.TEAM_EMAILS }},NEW_ENTRY_NOTIFY_EMAILS=${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }},ALERT_EMAILS=${{ secrets.ALERT_EMAILS }} \
+            --set-env-vars="BQ_PROJECT=${BQ_PROJECT},BQ_DATASET=${BQ_DATASET},BQ_TABLE=${BQ_TABLE},FORM_UID=${FORM_UID},SHEET_ID=${SHEET_ID},SHEET_NAME=${SHEET_NAME},SHEET_TAB=${SHEET_TAB},SHARED_DRIVE_FOLDER_ID=${SHARED_DRIVE_FOLDER_ID},DELEGATED_EMAIL=${DELEGATED_EMAIL},SA_KEY_SECRET=${SA_KEY_SECRET},SYNC_MODE=${SYNC_MODE},MAX_SHEET_ROWS=${MAX_SHEET_ROWS},TEST_KEYWORDS=${TEST_KEYWORDS},TEAM_EMAILS=${TEAM_EMAILS},NEW_ENTRY_NOTIFY_EMAILS=${NEW_ENTRY_NOTIFY_EMAILS},ALERT_EMAILS=${ALERT_EMAILS}" \
             --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest \
             || gcloud run jobs create kobo-full-sync \
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
             --region=${{ secrets.GCP_REGION }} \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
-            --set-env-vars=BQ_PROJECT=${{ secrets.BQ_PROJECT }},BQ_DATASET=${{ secrets.BQ_DATASET }},BQ_TABLE=${{ secrets.BQ_TABLE }},FORM_UID=${{ secrets.FORM_UID }},SHEET_ID=${{ secrets.SHEET_ID }},SHEET_NAME=${{ secrets.SHEET_NAME }},SHEET_TAB=${{ secrets.SHEET_TAB }},SHARED_DRIVE_FOLDER_ID=${{ secrets.SHARED_DRIVE_FOLDER_ID }},DELEGATED_EMAIL=${{ secrets.DELEGATED_EMAIL }},SA_KEY_SECRET=${{ secrets.SA_KEY_SECRET }},SYNC_MODE=${{ secrets.SYNC_MODE }},MAX_SHEET_ROWS=${{ secrets.MAX_SHEET_ROWS }},TEST_KEYWORDS=${{ secrets.TEST_KEYWORDS }},TEAM_EMAILS=${{ secrets.TEAM_EMAILS }},NEW_ENTRY_NOTIFY_EMAILS=${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }},ALERT_EMAILS=${{ secrets.ALERT_EMAILS }} \
+            --set-env-vars="BQ_PROJECT=${BQ_PROJECT},BQ_DATASET=${BQ_DATASET},BQ_TABLE=${BQ_TABLE},FORM_UID=${FORM_UID},SHEET_ID=${SHEET_ID},SHEET_NAME=${SHEET_NAME},SHEET_TAB=${SHEET_TAB},SHARED_DRIVE_FOLDER_ID=${SHARED_DRIVE_FOLDER_ID},DELEGATED_EMAIL=${DELEGATED_EMAIL},SA_KEY_SECRET=${SA_KEY_SECRET},SYNC_MODE=${SYNC_MODE},MAX_SHEET_ROWS=${MAX_SHEET_ROWS},TEST_KEYWORDS=${TEST_KEYWORDS},TEAM_EMAILS=${TEAM_EMAILS},NEW_ENTRY_NOTIFY_EMAILS=${NEW_ENTRY_NOTIFY_EMAILS},ALERT_EMAILS=${ALERT_EMAILS}" \
             --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest
