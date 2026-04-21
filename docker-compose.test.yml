@@ -3,10 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
-    volumes:
-      - ./shared:/app/shared
-      - ./services:/app/services
-      - ./tests:/app/tests
     command: >
       pytest tests/ -v
       --cov=shared
