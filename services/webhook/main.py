@@ -172,6 +172,36 @@ async def _process_submission(payload, run_id):
             form_uid=cfg.form_uid, run_id=run_id,
             project=cfg.bq_project, dataset=cfg.bq_dataset,
         )
+    else:
+        # ── Table does not exist yet — create it from inferred schema ─────────
+        # This handles the case where the webhook fires before the sync job
+        # has ever run, so the production table has not been created yet
+        logger.info(f"Table {prod_ref} does not exist — creating from schema")
+        from schema_manager import infer_bq_schema
+        from loader import ensure_table
+        schema = infer_bq_schema(clean_df)
+        table_name = cfg.bq_table
+        ensure_table(
+            bq_client, cfg.bq_project, cfg.bq_dataset,
+            table_name, schema
+        )
+        # Also ensure staging and quarantine tables exist
+        ensure_table(
+            bq_client, cfg.bq_project, cfg.bq_dataset,
+            f"{table_name}_staging", schema
+        )
+        ensure_table(
+            bq_client, cfg.bq_project, cfg.bq_dataset,
+            f"{table_name}_quarantine",
+            [
+                bigquery.SchemaField("quarantine_reason",   "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("quarantine_at",       "TIMESTAMP", mode="NULLABLE"),
+                bigquery.SchemaField("pipeline_run_id",     "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("source",              "STRING", mode="NULLABLE"),
+                bigquery.SchemaField("raw_row_json",        "STRING", mode="NULLABLE"),
+            ]
+        )
+        logger.info(f"Created tables for {table_name}")
 
     # ── Streaming insert to production ────────────────────────────────────────
     streaming_insert(bq_client, clean_df, prod_ref)
@@ -189,8 +219,7 @@ async def _process_submission(payload, run_id):
         gc,
         cfg.sheet_id or (state.get("sheet_id") if state else ""),
         cfg.sheet_name,
-        folder_id=cfg.shared_drive_folder_id,
-        delegated_email=cfg.delegated_email,
+        folder_id=cfg.shared_drive_folder_id
     )
 
     # For webhook, append only the new row (efficient for real-time updates)
