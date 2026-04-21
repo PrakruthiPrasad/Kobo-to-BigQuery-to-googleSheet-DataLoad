@@ -3,7 +3,12 @@ test_fetcher.py — Unit tests for shared/fetcher.py
 Tests Kobo API fetch, pagination, retry logic, and auth error handling.
 """
 import pytest
-import responses as resp_mock
+try:
+    import responses as resp_mock
+except ImportError:
+    resp_mock = None
+import pytest
+pytestmark = pytest.mark.skipif(resp_mock is None, reason="responses package not installed")
 import requests
 
 import sys, os
