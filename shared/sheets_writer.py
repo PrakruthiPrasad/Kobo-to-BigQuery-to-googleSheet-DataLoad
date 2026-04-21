@@ -25,11 +25,15 @@ _META_COLS = {
 }
 
 
-def get_or_create_spreadsheet(gc, sheet_id, sheet_name):
+def get_or_create_spreadsheet(gc, sheet_id, sheet_name,
+                               folder_id=None, delegated_email=None):
     """
     Open an existing Sheet by ID, or create a new one.
+    If delegated_email is provided, creates the sheet as that user
+    (requires Domain-Wide Delegation) to avoid service account quota.
     Returns (spreadsheet, is_new).
     """
+    # ── Step 1: Try to open existing sheet by ID ──────────────────────────────
     if sheet_id:
         try:
             sheet = gc.open_by_key(sheet_id)
@@ -40,9 +44,112 @@ def get_or_create_spreadsheet(gc, sheet_id, sheet_name):
                 f"Sheet ID '{sheet_id}' not found — creating new sheet"
             )
 
-    sheet = gc.create(sheet_name)
-    logger.info(f"Created new sheet: {sheet.title} (ID: {sheet.id})")
-    return sheet, True
+    # ── Step 2: Create new sheet ──────────────────────────────────────────────
+    from googleapiclient.discovery import build
+    import google.auth
+
+    SCOPES = [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://spreadsheets.google.com/feeds",
+    ]
+
+    if delegated_email:
+        # ── Domain-Wide Delegation path ───────────────────────────────────────
+        # Creates sheet AS the real user — uses their Drive quota not SA quota
+        # Loads SA JSON key from Secret Manager because Compute Engine
+        # credentials do not support with_subject() for delegation
+        try:
+            import json
+            import os
+            from google.oauth2 import service_account
+            from google.cloud import secretmanager
+
+            # Load service account JSON key from Secret Manager
+            project_id  = os.environ.get("BQ_PROJECT", "contactus-form-test")
+            secret_name = os.environ.get("SA_KEY_SECRET", "kobo-sa-key")
+            sm_client   = secretmanager.SecretManagerServiceClient()
+            name        = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+            response    = sm_client.access_secret_version(request={"name": name})
+            sa_info     = json.loads(response.payload.data.decode("utf-8"))
+
+            logger.info(f"Loaded SA key for: {sa_info.get('client_email')}")
+
+            # Build service account credentials with delegation
+            base_creds      = service_account.Credentials.from_service_account_info(
+                sa_info, scopes=SCOPES
+            )
+            delegated_creds = base_creds.with_subject(delegated_email)
+            drive_service   = build("drive", "v3", credentials=delegated_creds)
+            gc_to_use       = gspread.Client(auth=delegated_creds)
+
+            logger.info(f"Delegating as: {delegated_email}")
+
+            file_metadata = {
+                "name":     sheet_name,
+                "mimeType": "application/vnd.google-apps.spreadsheet",
+            }
+            if folder_id:
+                file_metadata["parents"] = [folder_id]
+
+            logger.info(f"Creating sheet with metadata: {file_metadata}")
+
+            result = drive_service.files().create(
+                body=file_metadata,
+                supportsAllDrives=True,
+                fields="id"
+            ).execute()
+
+            logger.info(f"Drive API result: {result}")
+
+            new_id = result.get("id")
+            if not new_id:
+                raise ValueError(f"Drive API returned no ID: {result}")
+
+            sheet = gc_to_use.open_by_key(new_id)
+            logger.info(
+                f"Created sheet via delegation: '{sheet.title}' "
+                f"(ID: {sheet.id})"
+            )
+            return sheet, True
+
+        except Exception as e:
+            logger.error(
+                f"Delegation failed: {type(e).__name__}: {e} — "
+                f"falling back to default credentials"
+            )
+            # Fall through to default credentials below
+
+    # ── Default credentials path (no delegation) ─────────────────────────────
+    # Used when delegated_email is not set or delegation failed
+    try:
+        default_creds, _ = google.auth.default(scopes=SCOPES)
+        drive_service    = build("drive", "v3", credentials=default_creds)
+
+        file_metadata = {
+            "name":     sheet_name,
+            "mimeType": "application/vnd.google-apps.spreadsheet",
+        }
+        if folder_id:
+            file_metadata["parents"] = [folder_id]
+
+        result = drive_service.files().create(
+            body=file_metadata,
+            supportsAllDrives=True,
+            fields="id"
+        ).execute()
+
+        new_id = result.get("id")
+        if not new_id:
+            raise ValueError(f"Drive API returned no ID: {result}")
+
+        sheet = gc.open_by_key(new_id)
+        logger.info(f"Created sheet: '{sheet.title}' (ID: {sheet.id})")
+        return sheet, True
+
+    except Exception as e:
+        logger.error(f"Sheet creation failed: {type(e).__name__}: {e}")
+        raise
 
 
 def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000):
@@ -167,8 +274,8 @@ def share_and_notify_first_run(spreadsheet, team_emails, new_rows_df=None):
         logger.info("No TEAM_EMAILS — skipping first-run share")
         return False
 
-    sheet_url   = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}"
-    preview     = _build_plain_text_preview(new_rows_df)
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}"
+    preview   = _build_plain_text_preview(new_rows_df)
 
     for email in team_emails:
         spreadsheet.share(
@@ -208,10 +315,10 @@ def notify_new_entries(spreadsheet, notify_emails, new_rows_df):
         logger.info("No new rows — skipping notification")
         return False
 
-    count       = len(new_rows_df)
-    sheet_url   = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}"
-    preview     = _build_plain_text_preview(new_rows_df)
-    timestamp   = datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC")
+    count     = len(new_rows_df)
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet.id}"
+    preview   = _build_plain_text_preview(new_rows_df)
+    timestamp = datetime.now(timezone.utc).strftime("%d %b %Y at %H:%M UTC")
 
     for email in notify_emails:
         spreadsheet.share(
