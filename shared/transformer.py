@@ -122,7 +122,7 @@ def transform_submissions(submissions, form_uid="unknown",
         df["kobo_form_version"] = "unknown"
 
     # 4. Add pipeline metadata
-    df["pipeline_loaded_at"] = datetime.now(timezone.utc).isoformat()
+    df["pipeline_loaded_at"] = pd.Timestamp.now(tz="UTC")
     df["pipeline_run_id"]    = pipeline_run_id
     df["pipeline_form_uid"]  = form_uid
 
@@ -198,6 +198,8 @@ def _flatten_repeat_groups(df):
             items = main_row[col] if isinstance(main_row[col], list) else []
             parent_id = main_row.get("_id", main_row.get("id", "unknown"))
             for item in items:
+                if item is None:
+                    continue
                 flat = {"parent_submission_id": str(parent_id)}
                 flat.update({
                     clean_column_name(k): v for k, v in item.items()

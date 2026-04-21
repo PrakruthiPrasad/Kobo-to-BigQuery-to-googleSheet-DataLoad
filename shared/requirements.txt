@@ -7,3 +7,5 @@ gspread>=5.10.0
 gspread-dataframe>=3.3.0
 google-auth>=2.22.0
 tenacity>=8.2.0
+google-api-python-client>=2.100.0
+google-cloud-secret-manager>=2.16.0

@@ -55,7 +55,14 @@ def run_sync():
 
     # ── Clients ──────────────────────────────────────────────────────────────
     bq_client = bigquery.Client(project=cfg.bq_project)
-    gc        = gspread.service_account()   # Uses GOOGLE_APPLICATION_CREDENTIALS
+    import google.auth
+    from google.auth.transport.requests import Request
+
+    credentials, _ = google.auth.default(scopes=[
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive",
+    ])
+    gc = gspread.Client(auth=credentials)
 
     # ── System tables ─────────────────────────────────────────────────────────
     ensure_all_system_tables(bq_client, cfg.bq_project, cfg.bq_dataset)
@@ -186,6 +193,8 @@ def run_sync():
             gc,
             cfg.sheet_id or (state.get("sheet_id") if state else ""),
             cfg.sheet_name,
+            folder_id=cfg.shared_drive_folder_id,
+            delegated_email=cfg.delegated_email,
         )
 
         write_to_sheet(

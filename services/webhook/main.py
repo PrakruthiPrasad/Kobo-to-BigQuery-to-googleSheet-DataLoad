@@ -22,6 +22,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared")
 from fastapi import FastAPI, Request, HTTPException, status
 from google.cloud import bigquery
 import gspread
+import google.auth
+from google.oauth2 import service_account
 
 from config         import load_config
 from transformer    import transform_submissions, is_test_submission
@@ -47,7 +49,15 @@ cfg = load_config()
 
 # BQ and Sheets clients — initialised once at startup
 bq_client = bigquery.Client(project=cfg.bq_project)
-gc        = gspread.service_account()
+
+# Use default credentials from Cloud Run service account
+credentials, _ = google.auth.default(
+    scopes=[
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive",
+    ]
+)
+gc = gspread.Client(auth=credentials)
 
 
 def validate_webhook_secret(request_secret, expected_secret):
@@ -179,6 +189,8 @@ async def _process_submission(payload, run_id):
         gc,
         cfg.sheet_id or (state.get("sheet_id") if state else ""),
         cfg.sheet_name,
+        folder_id=cfg.shared_drive_folder_id,
+        delegated_email=cfg.delegated_email,
     )
 
     # For webhook, append only the new row (efficient for real-time updates)

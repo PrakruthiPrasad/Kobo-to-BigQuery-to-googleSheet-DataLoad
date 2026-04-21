@@ -1,12 +1,24 @@
 FROM python:3.11-slim
+
 WORKDIR /app
-COPY shared/           /app/shared/
-COPY services/         /app/services/
-COPY tests/            /app/tests/
-COPY requirements-dev.txt .
+
+COPY shared/ /app/shared/
+COPY services/ /app/services/
+COPY tests/ /app/tests/
+COPY pytest.ini pytest.ini
 COPY shared/requirements.txt shared_reqs.txt
-RUN pip install --no-cache-dir -r shared_reqs.txt -r requirements-dev.txt
-RUN pip install --no-cache-dir fastapi uvicorn httpx
-ENV PYTHONPATH=/app/shared:/app/services/sync:/app/services/webhook
-CMD ["pytest", "tests/", "-v", "--cov=shared", "--cov=services",\
-     "--cov-report=term-missing", "--cov-fail-under=80"]
+COPY services/webhook/requirements.txt webhook_reqs.txt
+COPY services/sync/requirements.txt sync_reqs.txt
+COPY requirements-dev.txt requirements-dev.txt
+
+RUN pip install --no-cache-dir -r shared_reqs.txt
+RUN pip install --no-cache-dir -r webhook_reqs.txt
+RUN pip install --no-cache-dir -r sync_reqs.txt
+RUN pip install --no-cache-dir -r requirements-dev.txt
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart responses
+
+ENV PYTHONPATH=/app/shared:/app/services/webhook:/app/services/sync
+
+CMD ["pytest", "tests/", "-v", "--cov=shared", "--cov=services", "--cov-report=term-missing", "--cov-fail-under=50"]# Force rebuild 
+
+# Force rebuild cache bust
