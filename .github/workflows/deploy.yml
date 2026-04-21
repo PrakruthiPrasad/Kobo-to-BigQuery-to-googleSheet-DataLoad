@@ -56,7 +56,7 @@ jobs:
             --platform=managed \
             --allow-unauthenticated \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
-            --set-secrets=KOBO_TOKEN=kobo-token:latest,KOBO_WEBHOOK_SECRET=kobo-webhook-secret:latest
+            --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest,KOBO_WEBHOOK_SECRET=kobo-webhook-secret:latest
 
   # ── Deploy sync job ─────────────────────────────────────────────────────────
   deploy-sync:
@@ -84,7 +84,9 @@ jobs:
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
             --region=${{ secrets.GCP_REGION }} \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
+            --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest \
             || gcloud run jobs create kobo-full-sync \
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
             --region=${{ secrets.GCP_REGION }} \
-            --service-account=${{ secrets.GCP_SA_EMAIL }}
+            --service-account=${{ secrets.GCP_SA_EMAIL }} \
+            --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest
