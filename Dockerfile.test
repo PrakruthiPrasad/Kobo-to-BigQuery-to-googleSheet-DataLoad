@@ -6,22 +6,29 @@ WORKDIR /app
 COPY shared/           /app/shared/
 COPY services/         /app/services/
 COPY tests/            /app/tests/
-COPY shared/requirements.txt shared_reqs.txt
+
+# Copy all requirements files
+COPY shared/requirements.txt         shared_reqs.txt
 COPY services/webhook/requirements.txt webhook_reqs.txt
-COPY services/sync/requirements.txt sync_reqs.txt
+COPY services/sync/requirements.txt   sync_reqs.txt
+COPY requirements-dev.txt             requirements-dev.txt
 
-# Install all dependencies
-RUN pip install --no-cache-dir -r shared_reqs.txt
-RUN pip install --no-cache-dir -r webhook_reqs.txt
-RUN pip install --no-cache-dir -r sync_reqs.txt
-RUN pip install --no-cache-dir fastapi uvicorn python-multipart
-
-# Install test dependencies
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
+# Install all dependencies in one layer to avoid caching issues
+RUN pip install --no-cache-dir \
+    -r shared_reqs.txt \
+    -r webhook_reqs.txt \
+    -r sync_reqs.txt \
+    -r requirements-dev.txt \
+    fastapi \
+    uvicorn \
+    python-multipart \
+    responses>=0.23.0
 
 ENV PYTHONPATH=/app/shared:/app/services/webhook:/app/services/sync
 
 # Run tests
-CMD ["pytest", "tests/", "-v", "--cov=shared", "--cov=services", \
-     "--cov-report=term-missing", "--cov-fail-under=80"]
+CMD ["pytest", "tests/", "-v", \
+     "--cov=shared", \
+     "--cov=services", \
+     "--cov-report=term-missing", \
+     "--cov-fail-under=80"]
