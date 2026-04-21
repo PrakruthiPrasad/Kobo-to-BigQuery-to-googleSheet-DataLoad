@@ -71,7 +71,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Push pipeline image (already built in webhook job)
+      - name: Build and push pipeline image
         run: |
           gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
           docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
