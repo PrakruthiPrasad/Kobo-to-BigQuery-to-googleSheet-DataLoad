@@ -219,7 +219,8 @@ async def _process_submission(payload, run_id):
         gc,
         cfg.sheet_id or (state.get("sheet_id") if state else ""),
         cfg.sheet_name,
-        folder_id=cfg.shared_drive_folder_id
+        folder_id=cfg.shared_drive_folder_id,
+        delegated_email=cfg.delegated_email,
     )
 
     # For webhook, append only the new row (efficient for real-time updates)
