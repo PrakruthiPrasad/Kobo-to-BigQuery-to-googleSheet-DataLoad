@@ -199,7 +199,8 @@ def run_sync():
 
         write_to_sheet(
             spreadsheet, cfg.sheet_tab,
-            clean_df, max_rows=cfg.max_sheet_rows
+            clean_df, max_rows=cfg.max_sheet_rows,
+            mode="append"
         )
 
         # ── Step 7: Notifications ─────────────────────────────────────────────
