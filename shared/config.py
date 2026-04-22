@@ -26,6 +26,7 @@ class Config:
     sheet_name:             str = "Kobo Pipeline Data"
     sheet_tab:              str = "Survey Data"
     shared_drive_folder_id: str = ""
+    delegated_email:        str = ""
     team_emails:            List[str] = field(default_factory=list)
     delegated_email:        str = ""
 
@@ -58,7 +59,6 @@ def _split_emails(raw):
 def load_config():
     """Load configuration from environment variables."""
     return Config(
-        delegated_email       = os.environ.get("DELEGATED_EMAIL", ""),
         kobo_token            = os.environ["KOBO_TOKEN"],
         form_uid              = os.environ["FORM_UID"],
         kobo_base_url         = os.environ.get(
@@ -72,6 +72,7 @@ def load_config():
         sheet_name            = os.environ.get("SHEET_NAME", "Kobo Pipeline Data"),
         sheet_tab             = os.environ.get("SHEET_TAB", "Survey Data"),
         shared_drive_folder_id= os.environ.get("SHARED_DRIVE_FOLDER_ID", ""),
+        delegated_email       = os.environ.get("DELEGATED_EMAIL", ""),
         team_emails           = _split_emails(os.environ.get("TEAM_EMAILS", "")),
         new_entry_notify_emails = _split_emails(
             os.environ.get("NEW_ENTRY_NOTIFY_EMAILS", "")
