@@ -68,7 +68,7 @@ class TestWriteToSheet:
         mock_spreadsheet.worksheets.return_value = [ws]
         mock_spreadsheet.worksheet.return_value  = ws
 
-        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df)
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="overwrite")
 
         ws.clear.assert_called_once()
 
@@ -96,7 +96,7 @@ class TestWriteToSheet:
         mock_spreadsheet.worksheet.return_value  = ws
 
         write_to_sheet(mock_spreadsheet, "Survey Data",
-                        large_df, max_rows=50)
+                        large_df, max_rows=50, mode="overwrite")
 
         # set_with_dataframe was called with windowed data
         assert mock_swdf.called
