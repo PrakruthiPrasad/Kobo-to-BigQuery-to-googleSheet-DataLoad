@@ -152,7 +152,7 @@ def get_or_create_spreadsheet(gc, sheet_id, sheet_name,
         raise
 
 
-def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000):
+def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
     """
     Write a DataFrame to a Sheet tab with row windowing.
 
@@ -183,7 +183,10 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000):
 
     if tab_name in existing_tabs:
         ws = spreadsheet.worksheet(tab_name)
-        logger.info(f"Tab '{tab_name}' exists — overwriting")
+        if mode == "append":
+            logger.info(f"Tab '{tab_name}' exists — appending rows")
+        else:
+            logger.info(f"Tab '{tab_name}' exists — overwriting")
     elif "Sheet1" in existing_tabs:
         ws = spreadsheet.worksheet("Sheet1")
         ws.update_title(tab_name)
@@ -196,14 +199,35 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000):
         )
         logger.info(f"Created tab '{tab_name}'")
 
-    ws.clear()
-    set_with_dataframe(
-        ws, df, include_index=False, include_column_header=True
-    )
-    logger.info(
-        f"Written {len(df)} rows × {len(df.columns)} cols "
-        f"to tab '{tab_name}'"
-    )
+    if mode == "append":
+        # Check if sheet is empty (no headers yet)
+        existing_values = ws.get_all_values()
+        if not existing_values:
+            # Sheet is empty — write with headers
+            set_with_dataframe(
+                ws, df, include_index=False, include_column_header=True
+            )
+            logger.info(
+                f"Written {len(df)} rows × {len(df.columns)} cols "
+                f"(with headers) to tab '{tab_name}'"
+            )
+        else:
+            # Sheet has data — append rows without headers
+            rows_to_append = df.values.tolist()
+            ws.append_rows(rows_to_append, value_input_option="USER_ENTERED")
+            logger.info(
+                f"Appended {len(df)} rows to tab '{tab_name}'"
+            )
+    else:
+        # Overwrite mode — clear and rewrite everything
+        ws.clear()
+        set_with_dataframe(
+            ws, df, include_index=False, include_column_header=True
+        )
+        logger.info(
+            f"Written {len(df)} rows × {len(df.columns)} cols "
+            f"to tab '{tab_name}'"
+        )
     return ws
 
 
