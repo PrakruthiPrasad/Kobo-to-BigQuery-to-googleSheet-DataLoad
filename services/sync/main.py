@@ -204,7 +204,7 @@ def run_sync():
         prod_ref = f"{cfg.bq_project}.{cfg.bq_dataset}.{cfg.bq_table}"
         all_df = bq_client.query(
             f"SELECT * FROM `{prod_ref}` ORDER BY pipeline_loaded_at ASC"
-        ).to_dataframe()
+        ).to_dataframe(create_bqstorage_client=False)
         logger.info(f"Writing {len(all_df)} total rows to sheet")
         write_to_sheet(
             spreadsheet, cfg.sheet_tab,
