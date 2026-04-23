@@ -28,7 +28,6 @@ class Config:
     shared_drive_folder_id: str = ""
     delegated_email:        str = ""
     team_emails:            List[str] = field(default_factory=list)
-    delegated_email:        str = ""
 
     # New entry notification
     new_entry_notify_emails: List[str] = field(default_factory=list)

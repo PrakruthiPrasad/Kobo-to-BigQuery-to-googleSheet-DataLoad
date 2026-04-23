@@ -199,16 +199,16 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         )
         logger.info(f"Created tab '{tab_name}'")
 
-    if mode == "append":
-        # Convert any datetime columns to strings for JSON serialization
-        # Google Sheets API cannot serialize Timestamp objects
-        def stringify_timestamps(dataframe):
-            df_copy = dataframe.copy()
-            for col in df_copy.columns:
-                if "datetime" in str(df_copy[col].dtype) or hasattr(df_copy[col].dtype, "tz"):
-                    df_copy[col] = df_copy[col].astype(str)
-            return df_copy
+    # Convert any datetime columns to strings for JSON serialization
+    # Google Sheets API cannot serialize Timestamp objects
+    def stringify_timestamps(dataframe):
+        df_copy = dataframe.copy()
+        for col in df_copy.columns:
+            if "datetime" in str(df_copy[col].dtype) or hasattr(df_copy[col].dtype, "tz"):
+                df_copy[col] = df_copy[col].astype(str)
+        return df_copy
 
+    if mode == "append":
         # Check if sheet is empty (no headers yet)
         existing_values = ws.get_all_values()
         if not existing_values:
