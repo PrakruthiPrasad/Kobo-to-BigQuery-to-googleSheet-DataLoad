@@ -25,7 +25,6 @@ class TestGetOrCreateSpreadsheet:
         mock_gc.open_by_key.assert_called_once_with("existing-id")
         assert is_new is False
 
-    @pytest.mark.skip(reason="Requires GCP credentials — use integration tests instead")
     def test_creates_new_sheet_when_id_blank(self, mock_gc, mock_spreadsheet):
         sheet, is_new = get_or_create_spreadsheet(
             mock_gc, "", "New Sheet"
@@ -33,7 +32,6 @@ class TestGetOrCreateSpreadsheet:
         mock_gc.create.assert_called_once_with("New Sheet")
         assert is_new is True
 
-    @pytest.mark.skip(reason="Requires GCP credentials — use integration tests instead")
     def test_creates_new_sheet_when_id_not_found(
             self, mock_gc, mock_spreadsheet):
         import gspread
@@ -56,7 +54,7 @@ class TestWriteToSheet:
         mock_spreadsheet.worksheets.return_value = [ws]
         mock_spreadsheet.worksheet.return_value  = ws
 
-        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df)
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="overwrite")
 
         ws.update_title.assert_called_once_with("Survey Data")
 
@@ -68,7 +66,7 @@ class TestWriteToSheet:
         mock_spreadsheet.worksheets.return_value = [ws]
         mock_spreadsheet.worksheet.return_value  = ws
 
-        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="overwrite")
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df)
 
         ws.clear.assert_called_once()
 
@@ -79,7 +77,7 @@ class TestWriteToSheet:
         new_ws = MagicMock()
         mock_spreadsheet.add_worksheet.return_value = new_ws
 
-        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df)
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="overwrite")
 
         mock_spreadsheet.add_worksheet.assert_called_once()
 
