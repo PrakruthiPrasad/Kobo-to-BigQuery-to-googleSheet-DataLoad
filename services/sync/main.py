@@ -197,10 +197,19 @@ def run_sync():
             delegated_email=cfg.delegated_email,
         )
 
+        # Fetch ALL data from BigQuery to overwrite sheet completely
+        # This ensures sheet always mirrors BigQuery exactly
+        # and prevents duplicates from multiple sync runs
+        logger.info("Fetching all data from BigQuery for sheet refresh...")
+        prod_ref = f"{cfg.bq_project}.{cfg.bq_dataset}.{cfg.bq_table}"
+        all_df = bq_client.query(
+            f"SELECT * FROM `{prod_ref}` ORDER BY pipeline_loaded_at ASC"
+        ).to_dataframe()
+        logger.info(f"Writing {len(all_df)} total rows to sheet")
         write_to_sheet(
             spreadsheet, cfg.sheet_tab,
-            clean_df, max_rows=cfg.max_sheet_rows,
-            mode="append"
+            all_df, max_rows=cfg.max_sheet_rows,
+            mode="overwrite"
         )
 
         # ── Step 7: Notifications ─────────────────────────────────────────────
