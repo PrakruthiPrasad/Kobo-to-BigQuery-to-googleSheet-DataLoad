@@ -66,7 +66,7 @@ class TestWriteToSheet:
         mock_spreadsheet.worksheets.return_value = [ws]
         mock_spreadsheet.worksheet.return_value  = ws
 
-        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df)
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="overwrite")
 
         ws.clear.assert_called_once()
 
