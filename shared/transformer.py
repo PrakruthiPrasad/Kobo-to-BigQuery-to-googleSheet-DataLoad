@@ -122,7 +122,7 @@ def transform_submissions(submissions, form_uid="unknown",
         df["kobo_form_version"] = "unknown"
 
     # 4. Add pipeline metadata
-    df["pipeline_loaded_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    df["pipeline_loaded_at"] = pd.to_datetime(datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
     df["pipeline_run_id"]    = pipeline_run_id
     df["pipeline_form_uid"]  = form_uid
 

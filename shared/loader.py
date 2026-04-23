@@ -199,7 +199,7 @@ def streaming_insert(client, df, table_ref):
         logger.info("DataFrame is empty — skipping streaming insert")
         return 0
 
-    rows = json.loads(df.to_json(orient="records", default_handler=str))
+    rows = json.loads(df.to_json(orient="records", date_format="iso", default_handler=str))
     errors = client.insert_rows_json(table_ref, rows)
     if errors:
         raise RuntimeError(
