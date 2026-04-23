@@ -101,9 +101,10 @@ def get_processed_ids(client, project, dataset, form_uid):
             f"SELECT submission_id "
             f"FROM `{project}.{dataset}.processed_ids` "
             f"WHERE form_uid = '{form_uid}'"
-        ).to_dataframe()
+        ).to_dataframe(create_bqstorage_client=False)
         return set(result["submission_id"].astype(str).tolist())
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Could not fetch processed IDs: {e}")
         return set()
 
 
@@ -199,7 +200,7 @@ def streaming_insert(client, df, table_ref):
         logger.info("DataFrame is empty — skipping streaming insert")
         return 0
 
-    rows = json.loads(df.to_json(orient="records", date_format="iso", default_handler=str))
+    rows = json.loads(df.to_json(orient="records", default_handler=str))
     errors = client.insert_rows_json(table_ref, rows)
     if errors:
         raise RuntimeError(
@@ -219,7 +220,7 @@ def get_pipeline_state(client, project, dataset, form_uid):
         result = client.query(
             f"SELECT * FROM `{project}.{dataset}.pipeline_state` "
             f"WHERE form_uid = '{form_uid}' LIMIT 1"
-        ).to_dataframe()
+        ).to_dataframe(create_bqstorage_client=False)
         return result.iloc[0].to_dict() if not result.empty else None
     except Exception:
         return None
