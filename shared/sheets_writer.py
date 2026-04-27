@@ -222,10 +222,23 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
                 f"(with headers) to tab '{tab_name}'"
             )
         else:
-            # Sheet has data — append rows without headers
-            df_str = stringify_timestamps(df)
-            rows_to_append = df_str.values.tolist()
-            ws.append_rows(rows_to_append, value_input_option="USER_ENTERED")
+            # Sheet has data — append rows using set_with_dataframe
+            # This writes by column name not position so nulls stay aligned
+            # append_rows() is positional and shifts values when nulls are dropped
+            existing = ws.get_all_values()
+            header = existing[0] if existing else []
+            next_row = len(existing) + 1
+
+            # Reindex df to match sheet header order exactly
+            # Missing columns become empty strings (not shifted)
+            df_aligned = stringify_timestamps(df).reindex(columns=header).fillna("")
+            set_with_dataframe(
+                ws, df_aligned,
+                row=next_row,
+                include_index=False,
+                include_column_header=False,
+                resize=False,
+            )
             logger.info(
                 f"Appended {len(df)} rows to tab '{tab_name}'"
             )
