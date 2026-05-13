@@ -26,130 +26,31 @@ _META_COLS = {
 
 
 def get_or_create_spreadsheet(gc, sheet_id, sheet_name,
-                               folder_id=None, delegated_email=None):
+                               folder_id=None):
     """
-    Open an existing Sheet by ID, or create a new one.
-    If delegated_email is provided, creates the sheet as that user
-    (requires Domain-Wide Delegation) to avoid service account quota.
-    Returns (spreadsheet, is_new).
+    Open an existing Google Sheet by ID.
+    The sheet must be created manually and shared with the service account
+    before running the pipeline. Sheet creation is not automated.
+    Returns (spreadsheet, is_new=False).
+    Raises ValueError if sheet_id is missing or sheet is not found.
     """
-    # ── Step 1: Try to open existing sheet by ID ──────────────────────────────
-    if sheet_id:
-        try:
-            sheet = gc.open_by_key(sheet_id)
-            logger.info(f"Opened existing sheet: {sheet.title}")
-            return sheet, False
-        except gspread.exceptions.SpreadsheetNotFound:
-            logger.warning(
-                f"Sheet ID '{sheet_id}' not found — creating new sheet"
-            )
-
-    # ── Step 2: Create new sheet ──────────────────────────────────────────────
-    from googleapiclient.discovery import build
-    import google.auth
-
-    SCOPES = [
-        "https://www.googleapis.com/auth/drive",
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://spreadsheets.google.com/feeds",
-    ]
-
-    if delegated_email:
-        # ── Domain-Wide Delegation path ───────────────────────────────────────
-        # Creates sheet AS the real user — uses their Drive quota not SA quota
-        # Loads SA JSON key from Secret Manager because Compute Engine
-        # credentials do not support with_subject() for delegation
-        try:
-            import json
-            import os
-            from google.oauth2 import service_account
-            from google.cloud import secretmanager
-
-            # Load service account JSON key from Secret Manager
-            project_id  = os.environ.get("BQ_PROJECT", "contactus-form-test")
-            secret_name = os.environ.get("SA_KEY_SECRET", "kobo-sa-key")
-            sm_client   = secretmanager.SecretManagerServiceClient()
-            name        = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
-            response    = sm_client.access_secret_version(request={"name": name})
-            sa_info     = json.loads(response.payload.data.decode("utf-8"))
-
-            logger.info(f"Loaded SA key for: {sa_info.get('client_email')}")
-
-            # Build service account credentials with delegation
-            base_creds      = service_account.Credentials.from_service_account_info(
-                sa_info, scopes=SCOPES
-            )
-            delegated_creds = base_creds.with_subject(delegated_email)
-            drive_service   = build("drive", "v3", credentials=delegated_creds)
-            gc_to_use       = gspread.Client(auth=delegated_creds)
-
-            logger.info(f"Delegating as: {delegated_email}")
-
-            file_metadata = {
-                "name":     sheet_name,
-                "mimeType": "application/vnd.google-apps.spreadsheet",
-            }
-            if folder_id:
-                file_metadata["parents"] = [folder_id]
-
-            logger.info(f"Creating sheet with metadata: {file_metadata}")
-
-            result = drive_service.files().create(
-                body=file_metadata,
-                supportsAllDrives=True,
-                fields="id"
-            ).execute()
-
-            logger.info(f"Drive API result: {result}")
-
-            new_id = result.get("id")
-            if not new_id:
-                raise ValueError(f"Drive API returned no ID: {result}")
-
-            sheet = gc_to_use.open_by_key(new_id)
-            logger.info(
-                f"Created sheet via delegation: '{sheet.title}' "
-                f"(ID: {sheet.id})"
-            )
-            return sheet, True
-
-        except Exception as e:
-            logger.error(
-                f"Delegation failed: {type(e).__name__}: {e} — "
-                f"falling back to default credentials"
-            )
-            # Fall through to default credentials below
-
-    # ── Default credentials path (no delegation) ─────────────────────────────
-    # Used when delegated_email is not set or delegation failed
+    if not sheet_id or sheet_id.lower() in ("none", ""):
+        raise ValueError(
+            "SHEET_ID is required. Please create a Google Sheet manually, "
+            "share it with the service account as Editor, and set the "
+            "Sheet ID in GitHub Secrets (SHEET_ID)."
+        )
     try:
-        default_creds, _ = google.auth.default(scopes=SCOPES)
-        drive_service    = build("drive", "v3", credentials=default_creds)
-
-        file_metadata = {
-            "name":     sheet_name,
-            "mimeType": "application/vnd.google-apps.spreadsheet",
-        }
-        if folder_id:
-            file_metadata["parents"] = [folder_id]
-
-        result = drive_service.files().create(
-            body=file_metadata,
-            supportsAllDrives=True,
-            fields="id"
-        ).execute()
-
-        new_id = result.get("id")
-        if not new_id:
-            raise ValueError(f"Drive API returned no ID: {result}")
-
-        sheet = gc.open_by_key(new_id)
-        logger.info(f"Created sheet: '{sheet.title}' (ID: {sheet.id})")
-        return sheet, True
-
-    except Exception as e:
-        logger.error(f"Sheet creation failed: {type(e).__name__}: {e}")
-        raise
+        sheet = gc.open_by_key(sheet_id)
+        logger.info(f"Opened existing sheet: {sheet.title}")
+        return sheet, False
+    except gspread.exceptions.SpreadsheetNotFound:
+        raise ValueError(
+            f"Sheet ID '{sheet_id}' not found or not shared with the "
+            f"service account. Please check: "
+            f"1) The Sheet ID in GitHub Secrets is correct. "
+            f"2) The sheet is shared with the service account as Editor."
+        )
 
 
 def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):

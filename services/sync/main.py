@@ -194,7 +194,6 @@ def run_sync():
             cfg.sheet_id or (state.get("sheet_id") if state else ""),
             cfg.sheet_name,
             folder_id=cfg.shared_drive_folder_id,
-            delegated_email=cfg.delegated_email,
         )
 
         # Fetch ALL data from BigQuery to overwrite sheet completely
