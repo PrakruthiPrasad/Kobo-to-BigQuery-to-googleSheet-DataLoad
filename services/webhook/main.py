@@ -174,8 +174,6 @@ async def _process_submission(payload, run_id):
         )
     else:
         # ── Table does not exist yet — create it from inferred schema ─────────
-        # This handles the case where the webhook fires before the sync job
-        # has ever run, so the production table has not been created yet
         logger.info(f"Table {prod_ref} does not exist — creating from schema")
         from schema_manager import infer_bq_schema
         from loader import ensure_table
@@ -185,7 +183,6 @@ async def _process_submission(payload, run_id):
             bq_client, cfg.bq_project, cfg.bq_dataset,
             table_name, schema
         )
-        # Also ensure staging and quarantine tables exist
         ensure_table(
             bq_client, cfg.bq_project, cfg.bq_dataset,
             f"{table_name}_staging", schema
@@ -220,7 +217,6 @@ async def _process_submission(payload, run_id):
         cfg.sheet_id or (state.get("sheet_id") if state else ""),
         cfg.sheet_name,
         folder_id=cfg.shared_drive_folder_id,
-        delegated_email=cfg.delegated_email,
     )
 
     # For webhook, append only the new row (efficient for real-time updates)
