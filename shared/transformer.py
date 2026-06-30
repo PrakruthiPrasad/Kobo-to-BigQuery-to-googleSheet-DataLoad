@@ -80,6 +80,29 @@ def is_test_submission(row_dict, keywords=None):
     return False, None
 
 
+
+def _safe_stringify(series):
+    """
+    Cast a Series to string while correctly preserving None/NaN as Python
+    None (rather than the strings "nan"/"None", and rather than being
+    silently re-coerced back to NaN by pandas dtype inference — which
+    happens with .astype(str).replace({...}) on newer pandas versions).
+
+    Uses to_numpy(dtype=object) to bypass pandas' Series-level NA
+    normalisation, which is what causes the replace()-based approach
+    to fail silently on pandas 3.x.
+    """
+    arr = series.to_numpy(dtype=object)
+    out = []
+    for v in arr:
+        if v is None or v is pd.NA or (isinstance(v, float) and pd.isna(v)):
+            out.append(None)
+        else:
+            s = str(v)
+            out.append(None if s in ("nan", "None", "<NA>", "NaT") else s)
+    return pd.Series(out, index=series.index, dtype=object)
+
+
 def transform_submissions(submissions, form_uid="unknown",
                           pipeline_run_id="unknown",
                           test_keywords=None):
@@ -156,11 +179,7 @@ def transform_submissions(submissions, form_uid="unknown",
     # 7. Cast all non-metadata columns to string safely
     for col in clean_df.columns:
         if col not in _META_COLS:
-            clean_df[col] = (
-                clean_df[col]
-                .astype(str)
-                .replace({"nan": None, "None": None, "<NA>": None})
-            )
+            clean_df[col] = _safe_stringify(clean_df[col])
 
     if test_rows:
         logger.info(
@@ -210,11 +229,7 @@ def _flatten_repeat_groups(df):
             child_df = pd.DataFrame(rows)
             for c in child_df.columns:
                 if c != "parent_submission_id":
-                    child_df[c] = (
-                        child_df[c]
-                        .astype(str)
-                        .replace({"nan": None, "None": None})
-                    )
+                    child_df[c] = _safe_stringify(child_df[c])
             child_tables[col] = child_df
 
         cols_to_drop.append(col)

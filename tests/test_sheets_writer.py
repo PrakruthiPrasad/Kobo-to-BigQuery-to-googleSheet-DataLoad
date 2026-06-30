@@ -1,6 +1,7 @@
 """
 test_sheets_writer.py — Unit tests for shared/sheets_writer.py
-Tests Sheet creation, tab naming, windowing, notifications.
+Tests Sheet opening (manual-creation model), tab naming, windowing,
+append column-alignment, and notifications.
 """
 import pytest
 import pandas as pd
@@ -26,40 +27,18 @@ class TestGetOrCreateSpreadsheet:
         assert is_new is False
 
     def test_raises_when_sheet_id_missing(self, mock_gc, mock_spreadsheet):
-        import pytest
         with pytest.raises(ValueError, match="SHEET_ID is required"):
             get_or_create_spreadsheet(mock_gc, "", "Test Sheet")
 
     def test_raises_when_sheet_id_is_none(self, mock_gc, mock_spreadsheet):
-        import pytest
         with pytest.raises(ValueError, match="SHEET_ID is required"):
             get_or_create_spreadsheet(mock_gc, "none", "Test Sheet")
 
     def test_raises_when_sheet_not_found(self, mock_gc, mock_spreadsheet):
-        import pytest
         import gspread
         mock_gc.open_by_key.side_effect = gspread.exceptions.SpreadsheetNotFound
         with pytest.raises(ValueError, match="not found or not shared"):
             get_or_create_spreadsheet(mock_gc, "bad-id", "Test Sheet")
-    
-    # def test_creates_new_sheet_when_id_blank(self, mock_gc, mock_spreadsheet):
-    #     sheet, is_new = get_or_create_spreadsheet(
-    #         mock_gc, "", "New Sheet"
-    #     )
-    #     mock_gc.create.assert_called_once_with("New Sheet")
-    #     assert is_new is True
-
-    # def test_creates_new_sheet_when_id_not_found(
-    #         self, mock_gc, mock_spreadsheet):
-    #     import gspread
-    #     mock_gc.open_by_key.side_effect = (
-    #         gspread.exceptions.SpreadsheetNotFound
-    #     )
-    #     sheet, is_new = get_or_create_spreadsheet(
-    #         mock_gc, "bad-id", "Fallback Sheet"
-    #     )
-    #     mock_gc.create.assert_called_once_with("Fallback Sheet")
-    #     assert is_new is True
 
 
 class TestWriteToSheet:
@@ -124,6 +103,68 @@ class TestWriteToSheet:
         )
         assert result is None
         mock_spreadsheet.worksheets.assert_not_called()
+
+    @patch("sheets_writer.set_with_dataframe")
+    def test_append_mode_writes_headers_when_sheet_empty(
+            self, mock_swdf, mock_spreadsheet, clean_df):
+        """When sheet has no existing rows, append mode writes headers."""
+        ws = MagicMock()
+        ws.title = "Survey Data"
+        ws.get_all_values.return_value = []
+        mock_spreadsheet.worksheets.return_value = [ws]
+        mock_spreadsheet.worksheet.return_value  = ws
+
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="append")
+
+        assert mock_swdf.called
+        _, kwargs = mock_swdf.call_args
+        assert kwargs.get("include_column_header") is True
+
+    @patch("sheets_writer.set_with_dataframe")
+    def test_append_mode_aligns_columns_to_existing_header(
+            self, mock_swdf, mock_spreadsheet):
+        """
+        Append mode reindexes the new row to the sheet's existing header
+        order, so optional fields left blank by the user become empty
+        cells in the correct column instead of shifting other values.
+        """
+        ws = MagicMock()
+        ws.title = "Survey Data"
+        # Sheet header has 4 columns; submission only has 2 of them
+        ws.get_all_values.return_value = [
+            ["city", "country", "org", "website"]
+        ]
+        mock_spreadsheet.worksheets.return_value = [ws]
+        mock_spreadsheet.worksheet.return_value  = ws
+
+        partial_df = pd.DataFrame({
+            "city": ["Fremont"],
+            "country": ["United States"],
+        })
+
+        write_to_sheet(mock_spreadsheet, "Survey Data", partial_df, mode="append")
+
+        assert mock_swdf.called
+        called_df = mock_swdf.call_args[0][1]
+        # Reindexed to full header — missing columns become empty strings
+        assert list(called_df.columns) == ["city", "country", "org", "website"]
+        assert called_df.iloc[0]["org"] == ""
+        assert called_df.iloc[0]["website"] == ""
+        assert called_df.iloc[0]["city"] == "Fremont"
+
+    @patch("sheets_writer.set_with_dataframe")
+    def test_append_mode_does_not_clear_sheet(
+            self, mock_swdf, mock_spreadsheet, clean_df):
+        """Append mode must never call ws.clear() — that would wipe history."""
+        ws = MagicMock()
+        ws.title = "Survey Data"
+        ws.get_all_values.return_value = [["_id", "full_name"]]
+        mock_spreadsheet.worksheets.return_value = [ws]
+        mock_spreadsheet.worksheet.return_value  = ws
+
+        write_to_sheet(mock_spreadsheet, "Survey Data", clean_df, mode="append")
+
+        ws.clear.assert_not_called()
 
 
 class TestBuildPlainTextPreview:

@@ -2,11 +2,15 @@
 sheets_writer.py — Google Sheets write operations via gspread.
 
 Responsibilities:
-  - Create or open a Google Sheet
+  - Open an existing Google Sheet by ID (sheet must be created manually
+    and shared with the service account as Editor — creation is not
+    automated, see get_or_create_spreadsheet docstring)
   - Rename default Sheet1 tab (prevents two-tab confusion)
   - Write data with row windowing (Edge Case 8 — 10M cell limit)
-  - First-run setup: create sheet, move to Shared Drive, share with team
-  - Subsequent runs: update existing sheet silently, no emails
+  - Append mode: writes by column name (not position) so optional
+    fields left blank by the user do not shift other values
+  - Overwrite mode: full refresh from BigQuery (used by nightly sync)
+  - First-run setup: share sheet with team, send notification
   - New entry notification: email on every run that has new data
     Uses gspread share() — plain text preview of new entries included
 """
@@ -25,20 +29,25 @@ _META_COLS = {
 }
 
 
-def get_or_create_spreadsheet(gc, sheet_id, sheet_name,
-                               folder_id=None):
+def get_or_create_spreadsheet(gc, sheet_id, sheet_name, folder_id=None):
     """
     Open an existing Google Sheet by ID.
-    The sheet must be created manually and shared with the service account
-    before running the pipeline. Sheet creation is not automated.
+
+    Sheet creation is NOT automated — the sheet must be created manually
+    in Google Drive and shared with the service account as Editor before
+    running the pipeline. This avoids needing Domain-Wide Delegation or
+    a Drive storage quota for the service account.
+
     Returns (spreadsheet, is_new=False).
-    Raises ValueError if sheet_id is missing or sheet is not found.
+    Raises ValueError if sheet_id is missing or the sheet is not found /
+    not shared with the service account.
     """
     if not sheet_id or sheet_id.lower() in ("none", ""):
         raise ValueError(
             "SHEET_ID is required. Please create a Google Sheet manually, "
             "share it with the service account as Editor, and set the "
-            "Sheet ID in GitHub Secrets (SHEET_ID)."
+            "Sheet ID in GitHub Secrets (e.g. SHEET_ID or "
+            "SHEET_ID_<FORM_NAME> for multi-form setups)."
         )
     try:
         sheet = gc.open_by_key(sheet_id)
@@ -66,6 +75,16 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
     When Google creates a new spreadsheet it adds a default 'Sheet1' tab.
     This function renames it to tab_name instead of creating a second tab,
     so the user always sees exactly one tab.
+
+    mode="append":
+    Writes new rows by column name (reindexed against the sheet's
+    existing header) so that optional fields left blank by the user
+    become empty cells in the correct column rather than shifting
+    subsequent values into the wrong columns.
+
+    mode="overwrite":
+    Clears the tab and rewrites everything from scratch (used by the
+    nightly sync, which always passes the full BigQuery table).
     """
     if df.empty:
         logger.warning("DataFrame is empty — skipping Sheet write")
@@ -110,7 +129,6 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         return df_copy
 
     if mode == "append":
-        # Check if sheet is empty (no headers yet)
         existing_values = ws.get_all_values()
         if not existing_values:
             # Sheet is empty — write with headers
@@ -125,10 +143,10 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         else:
             # Sheet has data — append rows using set_with_dataframe
             # This writes by column name not position so nulls stay aligned
-            # append_rows() is positional and shifts values when nulls are dropped
-            existing = ws.get_all_values()
-            header = existing[0] if existing else []
-            next_row = len(existing) + 1
+            # append_rows() is positional and shifts values when nulls
+            # are dropped from the DataFrame (e.g. optional fields left blank)
+            header   = existing_values[0]
+            next_row = len(existing_values) + 1
 
             # Reindex df to match sheet header order exactly
             # Missing columns become empty strings (not shifted)
@@ -147,7 +165,8 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         # Overwrite mode — clear and rewrite everything
         ws.clear()
         set_with_dataframe(
-            ws, df, include_index=False, include_column_header=True
+            ws, stringify_timestamps(df),
+            include_index=False, include_column_header=True
         )
         logger.info(
             f"Written {len(df)} rows × {len(df.columns)} cols "
@@ -161,6 +180,10 @@ def move_to_shared_drive(drive_service, file_id, folder_id):
     Move a Google Sheet into a Shared Drive folder.
     Requires Google Workspace and service account added to the Shared Drive.
     Skips gracefully if drive_service is None.
+
+    Not used in the default manual-sheet workflow (sheets are placed in
+    their target folder manually when created), but kept available for
+    cases where the sheet needs to be relocated programmatically.
     """
     if not drive_service or not folder_id:
         return False
@@ -254,8 +277,10 @@ def notify_new_entries(spreadsheet, notify_emails, new_rows_df):
     The email includes a plain text preview of the new entries
     and a link to the sheet.
 
-    Recipients can be any email address (Gmail, Yahoo, company, etc.)
-    since gspread delegates sending to Google's own email system.
+    Recipients can be any Google account (Gmail or Workspace) since
+    gspread delegates sending to Google's own email system. Non-Google
+    addresses (Outlook, Yahoo, custom domains on Exchange) may not
+    reliably receive these notifications.
     """
     if not notify_emails:
         logger.info("No NEW_ENTRY_NOTIFY_EMAILS — skipping notification")
