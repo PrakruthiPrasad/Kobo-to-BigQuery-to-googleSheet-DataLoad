@@ -38,12 +38,12 @@ FORM_REGISTRY = {
     },
 
     # ── Safety Champion Form ──────────────────────────────────────────────────
-    os.environ.get("FORM_UID_SAFETY_CHAMPION", ""): {
+    os.environ.get("FORM_UID_SAFECITY_CHAMPION", ""): {
         "name":       "SafetyChampion",
-        "bq_table":   os.environ.get("BQ_TABLE_SAFETY_CHAMPION", "kobo_safety_champion"),
-        "sheet_id":   os.environ.get("SHEET_ID_SAFETY_CHAMPION", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_SAFETY_CHAMPION", "Safety Champion"),
-        "sheet_name": os.environ.get("SHEET_NAME_SAFETY_CHAMPION", "Safety Champion Data"),
+        "bq_table":   os.environ.get("BQ_TABLE_SAFECITY_CHAMPION", "kobo_safecity_champion"),
+        "sheet_id":   os.environ.get("SHEET_ID_SAFECITY_CHAMPION", ""),
+        "sheet_tab":  os.environ.get("SHEET_TAB_SAFECITY_CHAMPION", "Safety Champion"),
+        "sheet_name": os.environ.get("SHEET_NAME_SAFECITY_CHAMPION", "Safety Champion Data"),
     },
 }
 
