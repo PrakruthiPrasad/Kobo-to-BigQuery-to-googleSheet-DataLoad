@@ -13,7 +13,7 @@ HOW TO ADD A NEW FORM:
   2. Share it with the service account as Editor
   3. Copy the Sheet ID from the URL
   4. Add a new entry to FORM_REGISTRY below with the form's Asset UID
-  5. Add the new Sheet ID and other values to GitHub Secrets
+  5. Add the new secrets to GitHub Secrets
   6. Push to main — GitHub Actions deploys automatically
 
 HOW TO GET A FORM'S ASSET UID:
@@ -31,28 +31,19 @@ FORM_REGISTRY = {
     # ── ContactUs Form ────────────────────────────────────────────────────────
     os.environ.get("FORM_UID_CONTACT_US", ""): {
         "name":       "ContactUs",
-        "bq_table":   os.environ.get("BQ_TABLE_CONTACT_US", "kobo_contact_us"),
+        "bq_table":   os.environ.get("BQ_TABLE_CONTACT_US", "kobo_post_survey"),
         "sheet_id":   os.environ.get("SHEET_ID_CONTACT_US", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_CONTACT_US", "Contact Us"),
-        "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "Contact Us Responses"),
+        "sheet_tab":  os.environ.get("SHEET_TAB_CONTACT_US", "Survey Data"),
+        "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "ContactUs Form"),
     },
 
-    # ── Food Distribution Form ────────────────────────────────────────────────
-    os.environ.get("FORM_UID_FOOD_DISTRIBUTION", ""): {
-        "name":       "FoodDistribution",
-        "bq_table":   os.environ.get("BQ_TABLE_FOOD_DISTRIBUTION", "kobo_food_distribution"),
-        "sheet_id":   os.environ.get("SHEET_ID_FOOD_DISTRIBUTION", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_FOOD_DISTRIBUTION", "Food Distribution"),
-        "sheet_name": os.environ.get("SHEET_NAME_FOOD_DISTRIBUTION", "Food Distribution Data"),
-    },
-
-    # ── Membership Form ───────────────────────────────────────────────────────
-    os.environ.get("FORM_UID_MEMBERSHIP", ""): {
-        "name":       "Membership",
-        "bq_table":   os.environ.get("BQ_TABLE_MEMBERSHIP", "kobo_membership"),
-        "sheet_id":   os.environ.get("SHEET_ID_MEMBERSHIP", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_MEMBERSHIP", "Membership"),
-        "sheet_name": os.environ.get("SHEET_NAME_MEMBERSHIP", "Membership Data"),
+    # ── Safety Champion Form ──────────────────────────────────────────────────
+    os.environ.get("FORM_UID_SAFETY_CHAMPION", ""): {
+        "name":       "SafetyChampion",
+        "bq_table":   os.environ.get("BQ_TABLE_SAFETY_CHAMPION", "kobo_safety_champion"),
+        "sheet_id":   os.environ.get("SHEET_ID_SAFETY_CHAMPION", ""),
+        "sheet_tab":  os.environ.get("SHEET_TAB_SAFETY_CHAMPION", "Safety Champion"),
+        "sheet_name": os.environ.get("SHEET_NAME_SAFETY_CHAMPION", "Safety Champion Data"),
     },
 }
 
