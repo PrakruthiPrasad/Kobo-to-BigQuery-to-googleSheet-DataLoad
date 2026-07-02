@@ -13,7 +13,7 @@ HOW TO ADD A NEW FORM:
   2. Share it with the service account as Editor
   3. Copy the Sheet ID from the URL
   4. Add a new entry to FORM_REGISTRY below with the form's Asset UID
-  5. Add the new Sheet ID and other values to GitHub Secrets
+  5. Add the new secrets to GitHub Secrets
   6. Push to main — GitHub Actions deploys automatically
 
 HOW TO GET A FORM'S ASSET UID:
@@ -37,15 +37,14 @@ FORM_REGISTRY = {
         "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "ContactUs Form"),
     },
 
-    # ── Safety Champion Form ────────────────────────────────────────────────
+    # ── Safety Champion Form ──────────────────────────────────────────────────
     os.environ.get("FORM_UID_SAFETY_CHAMPION", ""): {
-        "name":       "FoodDistribution",
+        "name":       "SafetyChampion",
         "bq_table":   os.environ.get("BQ_TABLE_SAFETY_CHAMPION", "kobo_safety_champion"),
         "sheet_id":   os.environ.get("SHEET_ID_SAFETY_CHAMPION", ""),
         "sheet_tab":  os.environ.get("SHEET_TAB_SAFETY_CHAMPION", "Safety Champion"),
-        "sheet_name": os.environ.get("SHEET_NAME_SAFETY_CHAMPION", "Safety Champion"),
+        "sheet_name": os.environ.get("SHEET_NAME_SAFETY_CHAMPION", "Safety Champion Data"),
     },
-
 }
 
 # Remove entries with empty form_uid (not configured)
