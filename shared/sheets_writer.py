@@ -2,15 +2,11 @@
 sheets_writer.py — Google Sheets write operations via gspread.
 
 Responsibilities:
-  - Open an existing Google Sheet by ID (sheet must be created manually
-    and shared with the service account as Editor — creation is not
-    automated, see get_or_create_spreadsheet docstring)
+  - Create or open a Google Sheet
   - Rename default Sheet1 tab (prevents two-tab confusion)
   - Write data with row windowing (Edge Case 8 — 10M cell limit)
-  - Append mode: writes by column name (not position) so optional
-    fields left blank by the user do not shift other values
-  - Overwrite mode: full refresh from BigQuery (used by nightly sync)
-  - First-run setup: share sheet with team, send notification
+  - First-run setup: create sheet, move to Shared Drive, share with team
+  - Subsequent runs: update existing sheet silently, no emails
   - New entry notification: email on every run that has new data
     Uses gspread share() — plain text preview of new entries included
 """
@@ -29,37 +25,131 @@ _META_COLS = {
 }
 
 
-def get_or_create_spreadsheet(gc, sheet_id, sheet_name, folder_id=None):
+def get_or_create_spreadsheet(gc, sheet_id, sheet_name,
+                               folder_id=None, delegated_email=None):
     """
-    Open an existing Google Sheet by ID.
-
-    Sheet creation is NOT automated — the sheet must be created manually
-    in Google Drive and shared with the service account as Editor before
-    running the pipeline. This avoids needing Domain-Wide Delegation or
-    a Drive storage quota for the service account.
-
-    Returns (spreadsheet, is_new=False).
-    Raises ValueError if sheet_id is missing or the sheet is not found /
-    not shared with the service account.
+    Open an existing Sheet by ID, or create a new one.
+    If delegated_email is provided, creates the sheet as that user
+    (requires Domain-Wide Delegation) to avoid service account quota.
+    Returns (spreadsheet, is_new).
     """
-    if not sheet_id or sheet_id.lower() in ("none", ""):
-        raise ValueError(
-            "SHEET_ID is required. Please create a Google Sheet manually, "
-            "share it with the service account as Editor, and set the "
-            "Sheet ID in GitHub Secrets (e.g. SHEET_ID or "
-            "SHEET_ID_<FORM_NAME> for multi-form setups)."
-        )
+    # ── Step 1: Try to open existing sheet by ID ──────────────────────────────
+    if sheet_id:
+        try:
+            sheet = gc.open_by_key(sheet_id)
+            logger.info(f"Opened existing sheet: {sheet.title}")
+            return sheet, False
+        except gspread.exceptions.SpreadsheetNotFound:
+            logger.warning(
+                f"Sheet ID '{sheet_id}' not found — creating new sheet"
+            )
+
+    # ── Step 2: Create new sheet ──────────────────────────────────────────────
+    from googleapiclient.discovery import build
+    import google.auth
+
+    SCOPES = [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://spreadsheets.google.com/feeds",
+    ]
+
+    if delegated_email:
+        # ── Domain-Wide Delegation path ───────────────────────────────────────
+        # Creates sheet AS the real user — uses their Drive quota not SA quota
+        # Loads SA JSON key from Secret Manager because Compute Engine
+        # credentials do not support with_subject() for delegation
+        try:
+            import json
+            import os
+            from google.oauth2 import service_account
+            from google.cloud import secretmanager
+
+            # Load service account JSON key from Secret Manager
+            project_id  = os.environ.get("BQ_PROJECT", "contactus-form-test")
+            secret_name = os.environ.get("SA_KEY_SECRET", "kobo-sa-key")
+            sm_client   = secretmanager.SecretManagerServiceClient()
+            name        = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+            response    = sm_client.access_secret_version(request={"name": name})
+            sa_info     = json.loads(response.payload.data.decode("utf-8"))
+
+            logger.info(f"Loaded SA key for: {sa_info.get('client_email')}")
+
+            # Build service account credentials with delegation
+            base_creds      = service_account.Credentials.from_service_account_info(
+                sa_info, scopes=SCOPES
+            )
+            delegated_creds = base_creds.with_subject(delegated_email)
+            drive_service   = build("drive", "v3", credentials=delegated_creds)
+            gc_to_use       = gspread.Client(auth=delegated_creds)
+
+            logger.info(f"Delegating as: {delegated_email}")
+
+            file_metadata = {
+                "name":     sheet_name,
+                "mimeType": "application/vnd.google-apps.spreadsheet",
+            }
+            if folder_id:
+                file_metadata["parents"] = [folder_id]
+
+            logger.info(f"Creating sheet with metadata: {file_metadata}")
+
+            result = drive_service.files().create(
+                body=file_metadata,
+                supportsAllDrives=True,
+                fields="id"
+            ).execute()
+
+            logger.info(f"Drive API result: {result}")
+
+            new_id = result.get("id")
+            if not new_id:
+                raise ValueError(f"Drive API returned no ID: {result}")
+
+            sheet = gc_to_use.open_by_key(new_id)
+            logger.info(
+                f"Created sheet via delegation: '{sheet.title}' "
+                f"(ID: {sheet.id})"
+            )
+            return sheet, True
+
+        except Exception as e:
+            logger.error(
+                f"Delegation failed: {type(e).__name__}: {e} — "
+                f"falling back to default credentials"
+            )
+            # Fall through to default credentials below
+
+    # ── Default credentials path (no delegation) ─────────────────────────────
+    # Used when delegated_email is not set or delegation failed
     try:
-        sheet = gc.open_by_key(sheet_id)
-        logger.info(f"Opened existing sheet: {sheet.title}")
-        return sheet, False
-    except gspread.exceptions.SpreadsheetNotFound:
-        raise ValueError(
-            f"Sheet ID '{sheet_id}' not found or not shared with the "
-            f"service account. Please check: "
-            f"1) The Sheet ID in GitHub Secrets is correct. "
-            f"2) The sheet is shared with the service account as Editor."
-        )
+        default_creds, _ = google.auth.default(scopes=SCOPES)
+        drive_service    = build("drive", "v3", credentials=default_creds)
+
+        file_metadata = {
+            "name":     sheet_name,
+            "mimeType": "application/vnd.google-apps.spreadsheet",
+        }
+        if folder_id:
+            file_metadata["parents"] = [folder_id]
+
+        result = drive_service.files().create(
+            body=file_metadata,
+            supportsAllDrives=True,
+            fields="id"
+        ).execute()
+
+        new_id = result.get("id")
+        if not new_id:
+            raise ValueError(f"Drive API returned no ID: {result}")
+
+        sheet = gc.open_by_key(new_id)
+        logger.info(f"Created sheet: '{sheet.title}' (ID: {sheet.id})")
+        return sheet, True
+
+    except Exception as e:
+        logger.error(f"Sheet creation failed: {type(e).__name__}: {e}")
+        raise
 
 
 def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
@@ -75,16 +165,6 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
     When Google creates a new spreadsheet it adds a default 'Sheet1' tab.
     This function renames it to tab_name instead of creating a second tab,
     so the user always sees exactly one tab.
-
-    mode="append":
-    Writes new rows by column name (reindexed against the sheet's
-    existing header) so that optional fields left blank by the user
-    become empty cells in the correct column rather than shifting
-    subsequent values into the wrong columns.
-
-    mode="overwrite":
-    Clears the tab and rewrites everything from scratch (used by the
-    nightly sync, which always passes the full BigQuery table).
     """
     if df.empty:
         logger.warning("DataFrame is empty — skipping Sheet write")
@@ -129,9 +209,17 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         return df_copy
 
     if mode == "append":
+        # Check if sheet is empty (no headers yet)
         existing_values = ws.get_all_values()
-        if not existing_values:
-            # Sheet is empty — write with headers
+        # Check if header row is actually populated (not just empty rows/spaces)
+        # This handles the case where the tab was created manually but is empty
+        header = []
+        if existing_values:
+            header = [h for h in existing_values[0] if h and h.strip()]
+
+        if not header:
+            # Sheet is empty or has no valid headers — write with headers
+            ws.clear()  # Clear any empty rows or spaces first
             set_with_dataframe(
                 ws, stringify_timestamps(df),
                 include_index=False, include_column_header=True
@@ -141,11 +229,9 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
                 f"(with headers) to tab '{tab_name}'"
             )
         else:
-            # Sheet has data — append rows using set_with_dataframe
+            # Sheet has data with valid headers — append rows using set_with_dataframe
             # This writes by column name not position so nulls stay aligned
-            # append_rows() is positional and shifts values when nulls
-            # are dropped from the DataFrame (e.g. optional fields left blank)
-            header   = existing_values[0]
+            # append_rows() is positional and shifts values when nulls are dropped
             next_row = len(existing_values) + 1
 
             # Reindex df to match sheet header order exactly
@@ -165,8 +251,7 @@ def write_to_sheet(spreadsheet, tab_name, df, max_rows=10000, mode="append"):
         # Overwrite mode — clear and rewrite everything
         ws.clear()
         set_with_dataframe(
-            ws, stringify_timestamps(df),
-            include_index=False, include_column_header=True
+            ws, df, include_index=False, include_column_header=True
         )
         logger.info(
             f"Written {len(df)} rows × {len(df.columns)} cols "
@@ -180,10 +265,6 @@ def move_to_shared_drive(drive_service, file_id, folder_id):
     Move a Google Sheet into a Shared Drive folder.
     Requires Google Workspace and service account added to the Shared Drive.
     Skips gracefully if drive_service is None.
-
-    Not used in the default manual-sheet workflow (sheets are placed in
-    their target folder manually when created), but kept available for
-    cases where the sheet needs to be relocated programmatically.
     """
     if not drive_service or not folder_id:
         return False
@@ -277,10 +358,8 @@ def notify_new_entries(spreadsheet, notify_emails, new_rows_df):
     The email includes a plain text preview of the new entries
     and a link to the sheet.
 
-    Recipients can be any Google account (Gmail or Workspace) since
-    gspread delegates sending to Google's own email system. Non-Google
-    addresses (Outlook, Yahoo, custom domains on Exchange) may not
-    reliably receive these notifications.
+    Recipients can be any email address (Gmail, Yahoo, company, etc.)
+    since gspread delegates sending to Google's own email system.
     """
     if not notify_emails:
         logger.info("No NEW_ENTRY_NOTIFY_EMAILS — skipping notification")
