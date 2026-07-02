@@ -37,7 +37,7 @@ FORM_REGISTRY = {
         "name":       "SafetyChampion",
         "bq_table":   os.environ.get("BQ_TABLE_SAFECITY_CHAMPION", "kobo_safecity_champion"),
         "sheet_id":   os.environ.get("SHEET_ID_SAFECITY_CHAMPION", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_SAFECITY_CHAMPION", "Safety Champion"),
+        "sheet_tab":  os.environ.get("SHEET_TAB_SAFECITY_CHAMPION", "Safecity Champion"),
         "sheet_name": os.environ.get("SHEET_NAME_SAFECITY_CHAMPION", "Safecity Champion Data"),
     },
 }
