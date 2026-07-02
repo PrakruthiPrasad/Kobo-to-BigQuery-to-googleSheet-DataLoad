@@ -12,20 +12,15 @@ HOW TO ADD A NEW FORM:
   1. Create a Google Sheet manually in Google Drive
   2. Share it with the service account as Editor
   3. Copy the Sheet ID from the URL
-  4. Add a new entry to FORM_REGISTRY below with the form's Asset UID
+  4. Add a new entry to FORM_REGISTRY below
   5. Add the new secrets to GitHub Secrets
   6. Push to main — GitHub Actions deploys automatically
 
 HOW TO GET A FORM'S ASSET UID:
   Go to KoboToolbox → open the form → look at the browser URL:
   https://kf.kobotoolbox.org/#/forms/ASSET_UID_HERE/summary
-                                              ^^^^^^^^^^^
 """
 import os
-
-# ── Form Registry ─────────────────────────────────────────────────────────────
-# Each key is the KoboToolbox Asset UID (form_uid)
-# Each value is a dict with pipeline config for that form
 
 FORM_REGISTRY = {
     # ── ContactUs Form ────────────────────────────────────────────────────────
@@ -37,13 +32,13 @@ FORM_REGISTRY = {
         "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "ContactUs Form"),
     },
 
-    # ── Safety Champion Form ──────────────────────────────────────────────────
+    # ── Safecity Champion Form ────────────────────────────────────────────────
     os.environ.get("FORM_UID_SAFECITY_CHAMPION", ""): {
         "name":       "SafetyChampion",
         "bq_table":   os.environ.get("BQ_TABLE_SAFECITY_CHAMPION", "kobo_safecity_champion"),
         "sheet_id":   os.environ.get("SHEET_ID_SAFECITY_CHAMPION", ""),
         "sheet_tab":  os.environ.get("SHEET_TAB_SAFECITY_CHAMPION", "Safety Champion"),
-        "sheet_name": os.environ.get("SHEET_NAME_SAFECITY_CHAMPION", "Safety Champion Data"),
+        "sheet_name": os.environ.get("SHEET_NAME_SAFECITY_CHAMPION", "Safecity Champion Data"),
     },
 }
 
@@ -52,10 +47,8 @@ FORM_REGISTRY = {k: v for k, v in FORM_REGISTRY.items() if k}
 
 
 def get_form_config(form_uid):
-    """
-    Look up pipeline config for a given form_uid.
-    Returns the config dict or None if form is not registered.
-    """
+    """Look up pipeline config for a given form_uid.
+    Returns the config dict or None if form is not registered."""
     return FORM_REGISTRY.get(form_uid)
 
 
