@@ -49,49 +49,40 @@ jobs:
 
       - name: Create env vars file for webhook
         env:
-          # ── Pipeline-wide settings ──────────────────────────────────────────
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
           BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BQ_TABLE: ${{ secrets.BQ_TABLE }}
+          FORM_UID: ${{ secrets.FORM_UID }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+          SHEET_TAB: ${{ secrets.SHEET_TAB }}
+          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
+          DELEGATED_EMAIL: ${{ secrets.DELEGATED_EMAIL }}
+          SA_KEY_SECRET: ${{ secrets.SA_KEY_SECRET }}
           SYNC_MODE: ${{ secrets.SYNC_MODE }}
           MAX_SHEET_ROWS: ${{ secrets.MAX_SHEET_ROWS }}
           TEST_KEYWORDS: ${{ secrets.TEST_KEYWORDS }}
           TEAM_EMAILS: ${{ secrets.TEAM_EMAILS }}
           NEW_ENTRY_NOTIFY_EMAILS: ${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }}
           ALERT_EMAILS: ${{ secrets.ALERT_EMAILS }}
-          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
-          # ── ContactUs Form ──────────────────────────────────────────────────
-          FORM_UID_CONTACT_US: ${{ secrets.FORM_UID_CONTACT_US }}
-          BQ_TABLE_CONTACT_US: ${{ secrets.BQ_TABLE_CONTACT_US }}
-          SHEET_ID_CONTACT_US: ${{ secrets.SHEET_ID_CONTACT_US }}
-          SHEET_TAB_CONTACT_US: ${{ secrets.SHEET_TAB_CONTACT_US }}
-          SHEET_NAME_CONTACT_US: ${{ secrets.SHEET_NAME_CONTACT_US }}
-          # ── Safecity Champion Form ──────────────────────────────────────────
-          FORM_UID_SAFECITY_CHAMPION: ${{ secrets.FORM_UID_SAFECITY_CHAMPION }}
-          BQ_TABLE_SAFECITY_CHAMPION: ${{ secrets.BQ_TABLE_SAFECITY_CHAMPION }}
-          SHEET_ID_SAFECITY_CHAMPION: ${{ secrets.SHEET_ID_SAFECITY_CHAMPION }}
-          SHEET_TAB_SAFECITY_CHAMPION: ${{ secrets.SHEET_TAB_SAFECITY_CHAMPION }}
-          SHEET_NAME_SAFECITY_CHAMPION: ${{ secrets.SHEET_NAME_SAFECITY_CHAMPION }}
         run: |
           cat > /tmp/webhook-env.yaml << EOF
           BQ_PROJECT: "${BQ_PROJECT}"
           BQ_DATASET: "${BQ_DATASET}"
+          BQ_TABLE: "${BQ_TABLE}"
+          FORM_UID: "${FORM_UID}"
+          SHEET_ID: "${SHEET_ID}"
+          SHEET_NAME: "${SHEET_NAME}"
+          SHEET_TAB: "${SHEET_TAB}"
+          SHARED_DRIVE_FOLDER_ID: "${SHARED_DRIVE_FOLDER_ID}"
+          DELEGATED_EMAIL: "${DELEGATED_EMAIL}"
+          SA_KEY_SECRET: "${SA_KEY_SECRET}"
           SYNC_MODE: "${SYNC_MODE}"
           MAX_SHEET_ROWS: "${MAX_SHEET_ROWS}"
           TEST_KEYWORDS: "${TEST_KEYWORDS}"
           TEAM_EMAILS: "${TEAM_EMAILS}"
           NEW_ENTRY_NOTIFY_EMAILS: "${NEW_ENTRY_NOTIFY_EMAILS}"
           ALERT_EMAILS: "${ALERT_EMAILS}"
-          SHARED_DRIVE_FOLDER_ID: "${SHARED_DRIVE_FOLDER_ID}"
-          FORM_UID_CONTACT_US: "${FORM_UID_CONTACT_US}"
-          BQ_TABLE_CONTACT_US: "${BQ_TABLE_CONTACT_US}"
-          SHEET_ID_CONTACT_US: "${SHEET_ID_CONTACT_US}"
-          SHEET_TAB_CONTACT_US: "${SHEET_TAB_CONTACT_US}"
-          SHEET_NAME_CONTACT_US: "${SHEET_NAME_CONTACT_US}"
-          FORM_UID_SAFECITY_CHAMPION: "${FORM_UID_SAFECITY_CHAMPION}"
-          BQ_TABLE_SAFECITY_CHAMPION: "${BQ_TABLE_SAFECITY_CHAMPION}"
-          SHEET_ID_SAFECITY_CHAMPION: "${SHEET_ID_SAFECITY_CHAMPION}"
-          SHEET_TAB_SAFECITY_CHAMPION: "${SHEET_TAB_SAFECITY_CHAMPION}"
-          SHEET_NAME_SAFECITY_CHAMPION: "${SHEET_NAME_SAFECITY_CHAMPION}"
           EOF
 
       - name: Deploy to Cloud Run
@@ -128,49 +119,40 @@ jobs:
 
       - name: Create env vars file for sync
         env:
-          # ── Pipeline-wide settings ──────────────────────────────────────────
           BQ_PROJECT: ${{ secrets.BQ_PROJECT }}
           BQ_DATASET: ${{ secrets.BQ_DATASET }}
+          BQ_TABLE: ${{ secrets.BQ_TABLE }}
+          FORM_UID: ${{ secrets.FORM_UID }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          SHEET_NAME: ${{ secrets.SHEET_NAME }}
+          SHEET_TAB: ${{ secrets.SHEET_TAB }}
+          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
+          DELEGATED_EMAIL: ${{ secrets.DELEGATED_EMAIL }}
+          SA_KEY_SECRET: ${{ secrets.SA_KEY_SECRET }}
           SYNC_MODE: ${{ secrets.SYNC_MODE }}
           MAX_SHEET_ROWS: ${{ secrets.MAX_SHEET_ROWS }}
           TEST_KEYWORDS: ${{ secrets.TEST_KEYWORDS }}
           TEAM_EMAILS: ${{ secrets.TEAM_EMAILS }}
           NEW_ENTRY_NOTIFY_EMAILS: ${{ secrets.NEW_ENTRY_NOTIFY_EMAILS }}
           ALERT_EMAILS: ${{ secrets.ALERT_EMAILS }}
-          SHARED_DRIVE_FOLDER_ID: ${{ secrets.SHARED_DRIVE_FOLDER_ID }}
-          # ── ContactUs Form ──────────────────────────────────────────────────
-          FORM_UID_CONTACT_US: ${{ secrets.FORM_UID_CONTACT_US }}
-          BQ_TABLE_CONTACT_US: ${{ secrets.BQ_TABLE_CONTACT_US }}
-          SHEET_ID_CONTACT_US: ${{ secrets.SHEET_ID_CONTACT_US }}
-          SHEET_TAB_CONTACT_US: ${{ secrets.SHEET_TAB_CONTACT_US }}
-          SHEET_NAME_CONTACT_US: ${{ secrets.SHEET_NAME_CONTACT_US }}
-          # ── Safecity Champion Form ──────────────────────────────────────────
-          FORM_UID_SAFECITY_CHAMPION: ${{ secrets.FORM_UID_SAFECITY_CHAMPION }}
-          BQ_TABLE_SAFECITY_CHAMPION: ${{ secrets.BQ_TABLE_SAFECITY_CHAMPION }}
-          SHEET_ID_SAFECITY_CHAMPION: ${{ secrets.SHEET_ID_SAFECITY_CHAMPION }}
-          SHEET_TAB_SAFECITY_CHAMPION: ${{ secrets.SHEET_TAB_SAFECITY_CHAMPION }}
-          SHEET_NAME_SAFECITY_CHAMPION: ${{ secrets.SHEET_NAME_SAFECITY_CHAMPION }}
         run: |
           cat > /tmp/sync-env.yaml << EOF
           BQ_PROJECT: "${BQ_PROJECT}"
           BQ_DATASET: "${BQ_DATASET}"
+          BQ_TABLE: "${BQ_TABLE}"
+          FORM_UID: "${FORM_UID}"
+          SHEET_ID: "${SHEET_ID}"
+          SHEET_NAME: "${SHEET_NAME}"
+          SHEET_TAB: "${SHEET_TAB}"
+          SHARED_DRIVE_FOLDER_ID: "${SHARED_DRIVE_FOLDER_ID}"
+          DELEGATED_EMAIL: "${DELEGATED_EMAIL}"
+          SA_KEY_SECRET: "${SA_KEY_SECRET}"
           SYNC_MODE: "${SYNC_MODE}"
           MAX_SHEET_ROWS: "${MAX_SHEET_ROWS}"
           TEST_KEYWORDS: "${TEST_KEYWORDS}"
           TEAM_EMAILS: "${TEAM_EMAILS}"
           NEW_ENTRY_NOTIFY_EMAILS: "${NEW_ENTRY_NOTIFY_EMAILS}"
           ALERT_EMAILS: "${ALERT_EMAILS}"
-          SHARED_DRIVE_FOLDER_ID: "${SHARED_DRIVE_FOLDER_ID}"
-          FORM_UID_CONTACT_US: "${FORM_UID_CONTACT_US}"
-          BQ_TABLE_CONTACT_US: "${BQ_TABLE_CONTACT_US}"
-          SHEET_ID_CONTACT_US: "${SHEET_ID_CONTACT_US}"
-          SHEET_TAB_CONTACT_US: "${SHEET_TAB_CONTACT_US}"
-          SHEET_NAME_CONTACT_US: "${SHEET_NAME_CONTACT_US}"
-          FORM_UID_SAFECITY_CHAMPION: "${FORM_UID_SAFECITY_CHAMPION}"
-          BQ_TABLE_SAFECITY_CHAMPION: "${BQ_TABLE_SAFECITY_CHAMPION}"
-          SHEET_ID_SAFECITY_CHAMPION: "${SHEET_ID_SAFECITY_CHAMPION}"
-          SHEET_TAB_SAFECITY_CHAMPION: "${SHEET_TAB_SAFECITY_CHAMPION}"
-          SHEET_NAME_SAFECITY_CHAMPION: "${SHEET_NAME_SAFECITY_CHAMPION}"
           EOF
 
       - name: Deploy to Cloud Run Jobs
@@ -181,9 +163,13 @@ jobs:
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
             --env-vars-file=/tmp/sync-env.yaml \
             --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest \
+            --command=python \
+            --args=services/sync/main.py \
             || gcloud run jobs create kobo-full-sync \
             --image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/kobo-pipeline/kobo-pipeline:latest \
             --region=${{ secrets.GCP_REGION }} \
             --service-account=${{ secrets.GCP_SA_EMAIL }} \
             --env-vars-file=/tmp/sync-env.yaml \
-            --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest
+            --set-secrets=KOBO_TOKEN=KOBO_API_TOKEN:latest \
+            --command=python \
+            --args=services/sync/main.py
