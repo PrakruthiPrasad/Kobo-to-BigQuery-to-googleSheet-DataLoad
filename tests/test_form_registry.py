@@ -18,7 +18,7 @@ class TestFormRegistry:
             "SHEET_ID_CONTACT_US":    "sheet_contact_123",
             "SHEET_TAB_CONTACT_US":   "Contact Us",
             "SHEET_NAME_CONTACT_US":  "Contact Us Responses",
-            "FORM_UID_FOOD_DISTRIBUTION": "",
+            "FORM_UID_SAFETY_CHAMPION": "",
             "FORM_UID_MEMBERSHIP":    "",
         }):
             import importlib
@@ -37,7 +37,7 @@ class TestFormRegistry:
         """get_form_config returns None for unregistered form_uid."""
         with patch.dict(os.environ, {
             "FORM_UID_CONTACT_US":        "uid_contact_123",
-            "FORM_UID_FOOD_DISTRIBUTION": "",
+            "FORM_UID_SAFETY_CHAMPION": "",
             "FORM_UID_MEMBERSHIP":        "",
         }):
             import importlib
@@ -52,7 +52,7 @@ class TestFormRegistry:
         """get_all_forms skips forms with empty FORM_UID."""
         with patch.dict(os.environ, {
             "FORM_UID_CONTACT_US":        "uid_contact_123",
-            "FORM_UID_FOOD_DISTRIBUTION": "",   # not configured
+            "FORM_UID_SAFETY_CHAMPION": "",   # not configured
             "FORM_UID_MEMBERSHIP":        "",   # not configured
         }):
             import importlib
@@ -68,7 +68,7 @@ class TestFormRegistry:
         """get_all_forms returns all forms when multiple are configured."""
         with patch.dict(os.environ, {
             "FORM_UID_CONTACT_US":        "uid_contact_123",
-            "FORM_UID_FOOD_DISTRIBUTION": "uid_food_456",
+            "FORM_UID_SAFETY_CHAMPION": "uid_food_456",
             "FORM_UID_MEMBERSHIP":        "uid_member_789",
         }):
             import importlib
@@ -87,7 +87,7 @@ class TestFormRegistry:
         """get_all_form_uids returns a list of UIDs."""
         with patch.dict(os.environ, {
             "FORM_UID_CONTACT_US":        "uid_contact_123",
-            "FORM_UID_FOOD_DISTRIBUTION": "uid_food_456",
+            "FORM_UID_SAFETY_CHAMPION": "uid_food_456",
             "FORM_UID_MEMBERSHIP":        "",
         }):
             import importlib
@@ -104,7 +104,7 @@ class TestFormRegistry:
         """Registry is empty when no FORM_UID env vars are set."""
         with patch.dict(os.environ, {
             "FORM_UID_CONTACT_US":        "",
-            "FORM_UID_FOOD_DISTRIBUTION": "",
+            "FORM_UID_SAFETY_CHAMPION": "",
             "FORM_UID_MEMBERSHIP":        "",
         }):
             import importlib

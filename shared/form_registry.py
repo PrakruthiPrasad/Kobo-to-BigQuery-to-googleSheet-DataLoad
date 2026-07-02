@@ -31,29 +31,21 @@ FORM_REGISTRY = {
     # ── ContactUs Form ────────────────────────────────────────────────────────
     os.environ.get("FORM_UID_CONTACT_US", ""): {
         "name":       "ContactUs",
-        "bq_table":   os.environ.get("BQ_TABLE_CONTACT_US", "kobo_contact_us"),
+        "bq_table":   os.environ.get("BQ_TABLE_CONTACT_US", "kobo_post_survey"),
         "sheet_id":   os.environ.get("SHEET_ID_CONTACT_US", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_CONTACT_US", "Contact Us"),
-        "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "Contact Us Responses"),
+        "sheet_tab":  os.environ.get("SHEET_TAB_CONTACT_US", "Survey Data"),
+        "sheet_name": os.environ.get("SHEET_NAME_CONTACT_US", "ContactUs Form"),
     },
 
-    # ── Food Distribution Form ────────────────────────────────────────────────
-    os.environ.get("FORM_UID_FOOD_DISTRIBUTION", ""): {
+    # ── Safety Champion Form ────────────────────────────────────────────────
+    os.environ.get("FORM_UID_SAFETY_CHAMPION", ""): {
         "name":       "FoodDistribution",
-        "bq_table":   os.environ.get("BQ_TABLE_FOOD_DISTRIBUTION", "kobo_food_distribution"),
-        "sheet_id":   os.environ.get("SHEET_ID_FOOD_DISTRIBUTION", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_FOOD_DISTRIBUTION", "Food Distribution"),
-        "sheet_name": os.environ.get("SHEET_NAME_FOOD_DISTRIBUTION", "Food Distribution Data"),
+        "bq_table":   os.environ.get("BQ_TABLE_SAFETY_CHAMPION", "kobo_safety_champion"),
+        "sheet_id":   os.environ.get("SHEET_ID_SAFETY_CHAMPION", ""),
+        "sheet_tab":  os.environ.get("SHEET_TAB_SAFETY_CHAMPION", "Safety Champion"),
+        "sheet_name": os.environ.get("SHEET_NAME_SAFETY_CHAMPION", "Safety Champion"),
     },
 
-    # ── Membership Form ───────────────────────────────────────────────────────
-    os.environ.get("FORM_UID_MEMBERSHIP", ""): {
-        "name":       "Membership",
-        "bq_table":   os.environ.get("BQ_TABLE_MEMBERSHIP", "kobo_membership"),
-        "sheet_id":   os.environ.get("SHEET_ID_MEMBERSHIP", ""),
-        "sheet_tab":  os.environ.get("SHEET_TAB_MEMBERSHIP", "Membership"),
-        "sheet_name": os.environ.get("SHEET_NAME_MEMBERSHIP", "Membership Data"),
-    },
 }
 
 # Remove entries with empty form_uid (not configured)
